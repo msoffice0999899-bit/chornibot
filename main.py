@@ -2,19 +2,29 @@ import os
 import logging
 import telebot
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# Logging setup taaki logs clear dikhein
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-# Load environment variables (with fallback defaults from n8n workflow)
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8693410841:AAEHisYaRgRQpCrfqQ1AzTgwSMm2idi3ero")
-TARGET_CHAT_ID = os.getenv("TARGET_CHAT_ID", "-1003493006883")
-OWNER_ID = int(os.getenv("OWNER_ID", "6416451659"))
+# Railway ke environment variables read karna
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+TARGET_CHAT_ID = os.getenv("TARGET_CHAT_ID")
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+
+if not BOT_TOKEN:
+    logging.error("BOT_TOKEN missing! Please set BOT_TOKEN in Railway Variables.")
+    exit(1)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-@bot.message_handler(func=lambda message: True)
+@bot.message_handler(func=lambda message: True, content_types=[
+    'text', 'photo', 'video', 'document', 'audio', 
+    'voice', 'sticker', 'video_note', 'animation'
+])
 def process_message(message):
-    # Filter: Only Private Messages AND from Owner ID
+    # Check: message private chat me ho aur OWNER ne bheja ho
     is_private = message.chat.type == "private"
     is_owner = message.from_user and message.from_user.id == OWNER_ID
 
@@ -25,10 +35,10 @@ def process_message(message):
                 from_chat_id=message.chat.id,
                 message_id=message.message_id
             )
-            logging.info(f"Successfully copied message {message.message_id} to group {TARGET_CHAT_ID}")
+            logging.info(f"Successfully copied message {message.message_id} to {TARGET_CHAT_ID}")
         except Exception as e:
             logging.error(f"Failed to copy message {message.message_id}: {e}")
 
 if __name__ == "__main__":
     logging.info("Telegram Copy Bot started listening...")
-    bot.infinity_polling(skip_pending_updates=True)
+    bot.infinity_polling(skip_pending=True)
